@@ -1,5 +1,11 @@
+import dns from "dns";
 import nodemailer from "nodemailer";
 import { DigestReport, SmtpConfig } from "../src/types.js";
+
+// Ensure Node.js resolves IPv4 addresses first to avoid ENETUNREACH on cloud platforms like Render / Docker
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 // Helper to resolve effective SMTP configuration
 export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig {
@@ -32,8 +38,14 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
       port: effective.port,
       secure: effective.secure,
       auth: effective.user ? { user: effective.user, pass: effective.pass } : undefined,
-      connectionTimeout: 10000
-    });
+      family: 4, // Force IPv4 connection to prevent ENETUNREACH errors on cloud hosts
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+      tls: {
+        rejectUnauthorized: false
+      }
+    } as any);
 
     await transporter.verify();
     return { success: true, message: "SMTP 服务器连接测试成功！" };
@@ -69,10 +81,14 @@ export async function sendDigestEmail(
         port: smtp.port,
         secure: smtp.secure,
         auth: smtp.user ? { user: smtp.user, pass: smtp.pass } : undefined,
+        family: 4, // Force IPv4 connection to prevent ENETUNREACH errors on cloud hosts
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000,
         tls: {
           rejectUnauthorized: false
         }
-      });
+      } as any);
 
       const info = await transporter.sendMail({
         from: smtp.from,

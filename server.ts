@@ -1,7 +1,13 @@
+import dns from "dns";
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
+
+// Force IPv4 address resolution first across the entire Node process
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 import {
   getSystemStatus,
   getConfig,
