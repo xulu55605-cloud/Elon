@@ -25,12 +25,12 @@ let currentConfig: ScheduleConfig = {
   timezone: "Asia/Shanghai",
   recipientEmail: "xu.lu@cn.bosch.com, lxsury@163.com",
   smtp: {
-    host: process.env.SMTP_HOST || "",
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === "true",
-    user: process.env.SMTP_USER || "",
-    pass: process.env.SMTP_PASS || "",
-    from: process.env.SMTP_FROM || "Elon Musk Daily Digest <noreply@digest.local>"
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: process.env.SMTP_SECURE !== "false",
+    user: process.env.SMTP_USER || "xulu55605@gmail.com",
+    pass: process.env.SMTP_PASS || "ggwamjlzctrfdixw",
+    from: process.env.SMTP_FROM || "Elon Musk Daily Digest <xulu55605@gmail.com>"
   },
   lastRunAt: undefined,
   nextRunAt: undefined,
