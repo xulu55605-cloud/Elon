@@ -30,6 +30,7 @@ export interface DigestReport {
   htmlContent: string;
   deliveryStatus: 'sent' | 'pending' | 'simulated' | 'failed';
   recipient: string;
+  sourceMode?: 'grounded_search' | 'gemini_synthesis' | 'curated_fallback';
   sentAt?: string;
   deliveryDetails?: string;
   error?: string;

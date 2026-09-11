@@ -165,7 +165,7 @@ app.post("/api/send-email", async (req, res) => {
       return res.status(404).json({ success: false, error: "Report not found" });
     }
 
-    const targetRecipient = recipient || report.recipient || "xu.lu@cn.bosch.com";
+    const targetRecipient = recipient || report.recipient || getConfig().recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com";
     const reportToSend = { ...report, recipient: targetRecipient };
 
     const result = await sendDigestEmail(reportToSend, getConfig().smtp);

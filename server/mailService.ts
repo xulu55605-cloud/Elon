@@ -3,13 +3,20 @@ import { DigestReport, SmtpConfig } from "../src/types.js";
 
 // Helper to resolve effective SMTP configuration
 export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig {
+  const user = (customConfig?.user || process.env.SMTP_USER || "").trim();
+  const pass = (customConfig?.pass || process.env.SMTP_PASS || "").trim();
+  let from = (customConfig?.from || process.env.SMTP_FROM || "").trim();
+  if (!from || from.includes("noreply@digest.local")) {
+    from = user ? `Elon Musk Daily Digest <${user}>` : "Elon Musk Daily Digest <noreply@digest.local>";
+  }
+
   return {
-    host: customConfig?.host || process.env.SMTP_HOST || "",
+    host: (customConfig?.host || process.env.SMTP_HOST || "").trim(),
     port: Number(customConfig?.port || process.env.SMTP_PORT || 587),
     secure: customConfig?.secure ?? (process.env.SMTP_SECURE === "true"),
-    user: customConfig?.user || process.env.SMTP_USER || "",
-    pass: customConfig?.pass || process.env.SMTP_PASS || "",
-    from: customConfig?.from || process.env.SMTP_FROM || "Elon Musk Daily Digest <noreply@digest.local>"
+    user,
+    pass,
+    from
   };
 }
 
@@ -19,11 +26,12 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
   }
 
   try {
+    const effective = getEffectiveSmtp(config);
     const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: config.user ? { user: config.user, pass: config.pass } : undefined,
+      host: effective.host,
+      port: effective.port,
+      secure: effective.secure,
+      auth: effective.user ? { user: effective.user, pass: effective.pass } : undefined,
       connectionTimeout: 10000
     });
 
@@ -39,7 +47,16 @@ export async function sendDigestEmail(
   customConfig?: Partial<SmtpConfig>
 ): Promise<{ success: boolean; status: 'sent' | 'simulated' | 'failed'; details: string; error?: string }> {
   const smtp = getEffectiveSmtp(customConfig);
-  const targetRecipient = report.recipient || process.env.DEFAULT_RECIPIENT || "xu.lu@cn.bosch.com";
+  const rawRecipient = report.recipient || process.env.DEFAULT_RECIPIENT || "xu.lu@cn.bosch.com, lxsury@163.com";
+  
+  // Parse multiple recipients (supports comma, semicolon, newline separated)
+  const recipientList = rawRecipient
+    .split(/[,;\n]+/)
+    .map((r) => r.trim())
+    .filter((r) => r.length > 0 && r.includes("@"));
+
+  const targetDisplay = recipientList.length > 0 ? recipientList.join(", ") : rawRecipient;
+  const toParam = recipientList.length > 0 ? recipientList : rawRecipient;
   const subject = `【Elon Musk 每日动态内参】${report.date} 汇总简报`;
 
   const attachmentFilename = `Elon_Musk_Daily_Digest_${report.date}.html`;
@@ -59,7 +76,7 @@ export async function sendDigestEmail(
 
       const info = await transporter.sendMail({
         from: smtp.from,
-        to: targetRecipient,
+        to: toParam,
         subject: subject,
         text: `Elon Musk 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
         html: report.htmlContent,
@@ -75,14 +92,14 @@ export async function sendDigestEmail(
       return {
         success: true,
         status: "sent",
-        details: `邮件已成功通过 ${smtp.host} 发送至 ${targetRecipient} (Message ID: ${info.messageId})，附件已包含 ${attachmentFilename}。`
+        details: `邮件已成功通过 ${smtp.host} 发送至 ${targetDisplay} (Message ID: ${info.messageId})，附件已包含 ${attachmentFilename}。`
       };
     } catch (err: any) {
       console.error("Failed to send real email via SMTP:", err);
       return {
         success: false,
         status: "failed",
-        details: `尝试通过 ${smtp.host} 发送至 ${targetRecipient} 失败: ${err?.message || err}。`,
+        details: `尝试通过 ${smtp.host} 发送至 ${targetDisplay} 失败: ${err?.message || err}。`,
         error: err?.message || String(err)
       };
     }
@@ -92,6 +109,6 @@ export async function sendDigestEmail(
   return {
     success: true,
     status: "simulated",
-    details: `已生成独立 HTML 报告并成功就绪（目标邮箱: ${targetRecipient}）。目前未配置外部 SMTP 凭据，可在右上方“设置”中填入企业邮箱或公网 SMTP 即可自动进行公网发信。您也可以直接在线预览或一键下载该 ${attachmentFilename} 文件。`
+    details: `已生成独立 HTML 报告并成功就绪（目标邮箱: ${targetDisplay}）。目前未配置外部 SMTP 凭据，可在右上方“设置”中填入企业邮箱或公网 SMTP 即可自动进行公网发信。您也可以直接在线预览或一键下载该 ${attachmentFilename} 文件。`
   };
 }

@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-slate-600">·</span>
                 <span>智能汇总生成 HTML 报告</span>
                 <span className="text-slate-600">·</span>
-                <span className="text-sky-300 font-mono">专送: {status?.recipientEmail || "xu.lu@cn.bosch.com"}</span>
+                <span className="text-sky-300 font-mono">专送: {status?.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com"}</span>
               </p>
             </div>
           </div>

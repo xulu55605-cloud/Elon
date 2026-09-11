@@ -18,12 +18,12 @@ if (!fs.existsSync(DATA_DIR)) {
   }
 }
 
-// Default Configuration with the requested recipient
+// Default Configuration with the requested recipients
 let currentConfig: ScheduleConfig = {
   enabled: true,
   time: "08:00",
   timezone: "Asia/Shanghai",
-  recipientEmail: "xu.lu@cn.bosch.com",
+  recipientEmail: "xu.lu@cn.bosch.com, lxsury@163.com",
   smtp: {
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),
@@ -46,9 +46,11 @@ function loadState() {
     if (fs.existsSync(CONFIG_FILE)) {
       const data = fs.readFileSync(CONFIG_FILE, "utf-8");
       currentConfig = { ...currentConfig, ...JSON.parse(data) };
-      // Ensure target recipient is always defaulted if blank
+      // Ensure target recipient is always defaulted if blank or missing lxsury
       if (!currentConfig.recipientEmail) {
-        currentConfig.recipientEmail = "xu.lu@cn.bosch.com";
+        currentConfig.recipientEmail = "xu.lu@cn.bosch.com, lxsury@163.com";
+      } else if (!currentConfig.recipientEmail.includes("lxsury@163.com")) {
+        currentConfig.recipientEmail = `${currentConfig.recipientEmail}, lxsury@163.com`;
       }
     }
   } catch (e) {
@@ -95,7 +97,7 @@ export async function executeDailyDigest(options?: {
   }
 
   isFetchingInProgress = true;
-  const targetRecipient = options?.recipient || currentConfig.recipientEmail || "xu.lu@cn.bosch.com";
+  const targetRecipient = options?.recipient || currentConfig.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com";
   const now = new Date();
   const dateStr = now.toLocaleDateString("zh-CN", {
     timeZone: currentConfig.timezone || "Asia/Shanghai",
@@ -108,7 +110,7 @@ export async function executeDailyDigest(options?: {
 
   try {
     console.log(`[Scheduler] Fetching Elon Musk latest updates for ${targetRecipient}...`);
-    const { executiveSummary, keyInsights, posts } = await fetchElonMuskLiveUpdates();
+    const { executiveSummary, keyInsights, posts, sourceMode } = await fetchElonMuskLiveUpdates();
 
     const partialReport: Omit<DigestReport, "htmlContent"> = {
       id: reportId,
@@ -121,7 +123,8 @@ export async function executeDailyDigest(options?: {
       posts,
       categoriesBreakdown: computeBreakdown(posts),
       deliveryStatus: "pending",
-      recipient: targetRecipient
+      recipient: targetRecipient,
+      sourceMode
     };
 
     // Generate standalone HTML document

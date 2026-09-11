@@ -84,7 +84,7 @@ export default function App() {
       const res = await fetch("/api/fetch-and-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipient: config?.recipientEmail || "xu.lu@cn.bosch.com" }),
+        body: JSON.stringify({ recipient: config?.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com" }),
       }).then((r) => r.json());
 
       if (res.success && res.report) {
@@ -116,7 +116,7 @@ export default function App() {
     if (!targetId) return;
 
     setIsSending(true);
-    const targetRecipient = config?.recipientEmail || "xu.lu@cn.bosch.com";
+    const targetRecipient = config?.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com";
     showNotification(`正在推送 HTML 简报至 ${targetRecipient}...`, "info");
 
     try {

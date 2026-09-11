@@ -210,21 +210,70 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </h4>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                接收邮箱地址 (已按要求预设)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-slate-700">
+                  接收邮箱地址（支持输入多个，以逗号或分号分隔）
+                </label>
+                <div className="flex items-center space-x-1.5 text-[11px]">
+                  {!formData.recipientEmail?.includes("lxsury@163.com") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = formData.recipientEmail ? formData.recipientEmail.trim() : "";
+                        const updated = current ? `${current}, lxsury@163.com` : "lxsury@163.com";
+                        setFormData({ ...formData, recipientEmail: updated });
+                      }}
+                      className="text-sky-600 hover:text-sky-700 font-medium hover:underline"
+                    >
+                      + 加入 lxsury@163.com
+                    </button>
+                  )}
+                  {!formData.recipientEmail?.includes("xu.lu@cn.bosch.com") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = formData.recipientEmail ? formData.recipientEmail.trim() : "";
+                        const updated = current ? `xu.lu@cn.bosch.com, ${current}` : "xu.lu@cn.bosch.com";
+                        setFormData({ ...formData, recipientEmail: updated });
+                      }}
+                      className="text-sky-600 hover:text-sky-700 font-medium hover:underline"
+                    >
+                      + 加入 xu.lu@cn.bosch.com
+                    </button>
+                  )}
+                </div>
+              </div>
               <input
-                type="email"
+                type="text"
                 required
                 value={formData.recipientEmail}
                 onChange={(e) =>
                   setFormData({ ...formData, recipientEmail: e.target.value })
                 }
-                placeholder="xu.lu@cn.bosch.com"
+                placeholder="xu.lu@cn.bosch.com, lxsury@163.com"
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-mono"
               />
-              <p className="text-[11px] text-slate-500 mt-1">
-                简报将自动作为正文和附件形式发送至该地址。
+              
+              {/* Active Recipient Tags */}
+              <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                <span className="text-[11px] text-slate-500 mr-1">当前有效收件人:</span>
+                {formData.recipientEmail
+                  ?.split(/[,;\s]+/)
+                  .map((e) => e.trim())
+                  .filter((e) => e.includes("@"))
+                  .map((email, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-sky-50 text-sky-700 border border-sky-200"
+                    >
+                      <Mail className="w-3 h-3 mr-1 text-sky-500" />
+                      {email}
+                    </span>
+                  ))}
+              </div>
+
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                每日简报将自动作为正文排版和附件同时推送到上述所有指定邮箱。
               </p>
             </div>
           </div>

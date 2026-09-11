@@ -1,6 +1,6 @@
 # Elon Musk 社交动态每日简报系统 (Elon Musk Daily Digest)
 
-每日自动抓取 Elon Musk 最新社交媒体动态（𝕏 / Tesla / SpaceX / xAI 等），汇总提炼核心要点与专业中文翻译解读，自动生成独立的 HTML 简报并发送至目标邮箱 `xu.lu@cn.bosch.com`。
+每日自动抓取 Elon Musk 最新社交媒体动态（𝕏 / Tesla / SpaceX / xAI 等），汇总提炼核心要点与专业中文翻译解读，自动生成独立的 HTML 简报并发送至目标邮箱 `xu.lu@cn.bosch.com` 和 `lxsury@163.com`。
 
 ---
 

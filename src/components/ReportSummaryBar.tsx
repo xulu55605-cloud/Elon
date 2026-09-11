@@ -50,17 +50,42 @@ export const ReportSummaryBar: React.FC<ReportSummaryBarProps> = ({
     }
   };
 
+  const getSourceModeBadge = () => {
+    if (report.sourceMode === "grounded_search") {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200">
+          <Sparkles className="w-3 h-3 mr-1 text-purple-600" />
+          实时联网检索
+        </span>
+      );
+    }
+    if (report.sourceMode === "gemini_synthesis") {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200">
+          <Sparkles className="w-3 h-3 mr-1 text-sky-600" />
+          Gemini 智能研判
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+        高保真内参
+      </span>
+    );
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 mb-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-5 border-b border-slate-100">
         
         {/* Title & Status */}
         <div>
-          <div className="flex items-center space-x-3 mb-1.5 flex-wrap gap-y-1">
+          <div className="flex items-center space-x-2.5 mb-1.5 flex-wrap gap-y-1">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
               {report.title}
             </h2>
             {getDeliveryBadge()}
+            {getSourceModeBadge()}
           </div>
           
           <div className="flex items-center space-x-3 text-xs text-slate-500 flex-wrap gap-y-1">
@@ -71,7 +96,18 @@ export const ReportSummaryBar: React.FC<ReportSummaryBarProps> = ({
             <span>·</span>
             <span>生成时间: {new Date(report.generatedAt).toLocaleTimeString()}</span>
             <span>·</span>
-            <span className="text-slate-700 font-medium">目标邮箱: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sky-700">{report.recipient}</code></span>
+            <span className="text-slate-700 font-medium inline-flex items-center flex-wrap gap-1">
+              <span>目标邮箱:</span>
+              {report.recipient
+                .split(/[,;\s]+/)
+                .map((r) => r.trim())
+                .filter(Boolean)
+                .map((email, idx) => (
+                  <code key={idx} className="bg-slate-100 px-1.5 py-0.5 rounded text-sky-700 font-mono text-[11px]">
+                    {email}
+                  </code>
+                ))}
+            </span>
           </div>
         </div>
 

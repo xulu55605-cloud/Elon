@@ -224,8 +224,15 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
           <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">
             Elon Musk 社交媒体动态智能聚合机器人
           </div>
-          <div style="font-size:11px;color:#64748B;line-height:1.5;">
-            本文件由系统每日自动抓取、翻译、提炼并汇总生成，直接推送到指定邮箱 <a href="mailto:${recipient}" style="color:#0284C7;text-decoration:none;">${recipient}</a>。<br />
+          <div style="font-size:11px;color:#64748B;line-height:1.6;">
+            本文件由系统每日自动抓取、翻译、提炼并汇总生成，直接推送到指定邮箱 ${
+              (recipient || "xu.lu@cn.bosch.com, lxsury@163.com")
+                .split(/[,;\s]+/)
+                .map((r) => r.trim())
+                .filter(Boolean)
+                .map((email) => `<a href="mailto:${email}" style="color:#0284C7;text-decoration:none;font-weight:600;">${email}</a>`)
+                .join("、")
+            }。<br />
             数据来源覆盖 X (@elonmusk)、Tesla、SpaceX、xAI 官方发布与全球科技财经资讯。
           </div>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid #E2E8F0;font-size:10px;color:#94A3B8;">
