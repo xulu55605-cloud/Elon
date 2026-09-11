@@ -1,0 +1,6 @@
+{
+  "name": "Elon Musk 社交动态每日简报系统",
+  "description": "每日自动抓取Elon Musk最新社交媒体动态，汇总生成精美HTML简报文件，并自动发送至目标邮箱。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
