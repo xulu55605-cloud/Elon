@@ -25,6 +25,8 @@ let currentConfig: ScheduleConfig = {
   timezone: "Asia/Shanghai",
   recipientEmail: "xu.lu@cn.bosch.com, lxsury@163.com",
   smtp: {
+    mode: (process.env.EMAIL_MODE as any) || (process.env.RESEND_API_KEY ? "resend" : "smtp"),
+    resendApiKey: process.env.RESEND_API_KEY || "",
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: Number(process.env.SMTP_PORT || 465),
     secure: process.env.SMTP_SECURE !== "false",

@@ -37,6 +37,8 @@ export interface DigestReport {
 }
 
 export interface SmtpConfig {
+  mode?: 'smtp' | 'resend';
+  resendApiKey?: string;
   host: string;
   port: number;
   secure: boolean;

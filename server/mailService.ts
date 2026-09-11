@@ -42,16 +42,25 @@ async function createSafeTransporter(effective: SmtpConfig) {
   } as any);
 }
 
-// Helper to resolve effective SMTP configuration
+// Helper to resolve effective SMTP/Email configuration
 export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig {
+  const mode = customConfig?.mode || (process.env.EMAIL_MODE as any) || (process.env.RESEND_API_KEY ? "resend" : "smtp");
+  const resendApiKey = (customConfig?.resendApiKey || process.env.RESEND_API_KEY || "").trim();
+
   const user = (customConfig?.user || process.env.SMTP_USER || "").trim();
   const pass = (customConfig?.pass || process.env.SMTP_PASS || "").trim();
   let from = (customConfig?.from || process.env.SMTP_FROM || "").trim();
   if (!from || from.includes("noreply@digest.local")) {
-    from = user ? `Elon Musk Daily Digest <${user}>` : "Elon Musk Daily Digest <noreply@digest.local>";
+    if (mode === "resend") {
+      from = "Elon Musk Daily Digest <onboarding@resend.dev>";
+    } else {
+      from = user ? `Elon Musk Daily Digest <${user}>` : "Elon Musk Daily Digest <noreply@digest.local>";
+    }
   }
 
   return {
+    mode,
+    resendApiKey,
     host: (customConfig?.host || process.env.SMTP_HOST || "").trim(),
     port: Number(customConfig?.port || process.env.SMTP_PORT || 587),
     secure: customConfig?.secure ?? (process.env.SMTP_SECURE === "true"),
@@ -62,14 +71,37 @@ export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig
 }
 
 export async function verifySmtpConnection(config: SmtpConfig): Promise<{ success: boolean; message: string }> {
+  const effective = getEffectiveSmtp(config);
+
+  // If using Resend HTTP API mode
+  if (effective.mode === "resend") {
+    if (!effective.resendApiKey) {
+      return { success: false, message: "请填写 Resend API Key (以 re_ 开头)" };
+    }
+    try {
+      // Validate Resend API key by querying domains list via HTTPS
+      const res = await fetch("https://api.resend.com/api-keys", {
+        headers: {
+          Authorization: `Bearer ${effective.resendApiKey}`
+        }
+      });
+      if (res.ok || res.status === 200) {
+        return { success: true, message: "Resend HTTPS API 认证成功！支持 Render 任意免费容器发信。" };
+      }
+      const data: any = await res.json().catch(() => ({}));
+      return { success: false, message: `Resend API 校验失败 (${res.status}): ${data.message || data.error || "Key无效"}` };
+    } catch (e: any) {
+      return { success: false, message: `无法连接 Resend API: ${e.message}` };
+    }
+  }
+
+  // Standard SMTP mode
   if (!config.host) {
     return { success: false, message: "未填写 SMTP 服务器地址 (Host)" };
   }
 
   try {
-    const effective = getEffectiveSmtp(config);
     const transporter = await createSafeTransporter(effective);
-
     await transporter.verify();
     return { success: true, message: "SMTP 服务器连接测试成功！" };
   } catch (err: any) {
@@ -81,7 +113,7 @@ export async function sendDigestEmail(
   report: DigestReport,
   customConfig?: Partial<SmtpConfig>
 ): Promise<{ success: boolean; status: 'sent' | 'simulated' | 'failed'; details: string; error?: string }> {
-  const smtp = getEffectiveSmtp(customConfig);
+  const emailConfig = getEffectiveSmtp(customConfig);
   const rawRecipient = report.recipient || process.env.DEFAULT_RECIPIENT || "xu.lu@cn.bosch.com, lxsury@163.com";
   
   // Parse multiple recipients (supports comma, semicolon, newline separated)
@@ -91,18 +123,65 @@ export async function sendDigestEmail(
     .filter((r) => r.length > 0 && r.includes("@"));
 
   const targetDisplay = recipientList.length > 0 ? recipientList.join(", ") : rawRecipient;
-  const toParam = recipientList.length > 0 ? recipientList : rawRecipient;
+  const toParam = recipientList.length > 0 ? recipientList : [rawRecipient];
   const subject = `【Elon Musk 每日动态内参】${report.date} 汇总简报`;
 
   const attachmentFilename = `Elon_Musk_Daily_Digest_${report.date}.html`;
 
-  // If SMTP host is configured, try sending real email
-  if (smtp.host && (smtp.user || smtp.port === 25)) {
+  // 1. Resend HTTP API Mode (Bypasses all cloud provider port blocks like Render / AWS)
+  if (emailConfig.mode === "resend" && emailConfig.resendApiKey) {
     try {
-      const transporter = await createSafeTransporter(smtp);
+      const payload: any = {
+        from: emailConfig.from || "Elon Musk Daily Digest <onboarding@resend.dev>",
+        to: toParam,
+        subject: subject,
+        html: report.htmlContent,
+        text: `Elon Musk 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
+        attachments: [
+          {
+            filename: attachmentFilename,
+            content: Buffer.from(report.htmlContent).toString("base64")
+          }
+        ]
+      };
+
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${emailConfig.resendApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data: any = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      }
+
+      return {
+        success: true,
+        status: "sent",
+        details: `邮件已成功通过 Resend HTTPS API 发送至 ${targetDisplay} (Email ID: ${data.id})，附件已包含 ${attachmentFilename}。`
+      };
+    } catch (err: any) {
+      console.error("Failed to send real email via Resend API:", err);
+      return {
+        success: false,
+        status: "failed",
+        details: `尝试通过 Resend API 发送至 ${targetDisplay} 失败: ${err?.message || err}。`,
+        error: err?.message || String(err)
+      };
+    }
+  }
+
+  // 2. Standard SMTP Mode
+  if (emailConfig.host && (emailConfig.user || emailConfig.port === 25)) {
+    try {
+      const transporter = await createSafeTransporter(emailConfig);
 
       const info = await transporter.sendMail({
-        from: smtp.from,
+        from: emailConfig.from,
         to: toParam,
         subject: subject,
         text: `Elon Musk 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
@@ -119,23 +198,23 @@ export async function sendDigestEmail(
       return {
         success: true,
         status: "sent",
-        details: `邮件已成功通过 ${smtp.host} 发送至 ${targetDisplay} (Message ID: ${info.messageId})，附件已包含 ${attachmentFilename}。`
+        details: `邮件已成功通过 ${emailConfig.host} 发送至 ${targetDisplay} (Message ID: ${info.messageId})，附件已包含 ${attachmentFilename}。`
       };
     } catch (err: any) {
       console.error("Failed to send real email via SMTP:", err);
       return {
         success: false,
         status: "failed",
-        details: `尝试通过 ${smtp.host} 发送至 ${targetDisplay} 失败: ${err?.message || err}。`,
+        details: `尝试通过 ${emailConfig.host} 发送至 ${targetDisplay} 失败: ${err?.message || err}。`,
         error: err?.message || String(err)
       };
     }
   }
 
-  // If SMTP is not yet configured, record simulated delivery with full details
+  // 3. If neither is configured, record simulated delivery
   return {
     success: true,
     status: "simulated",
-    details: `已生成独立 HTML 报告并成功就绪（目标邮箱: ${targetDisplay}）。目前未配置外部 SMTP 凭据，可在右上方“设置”中填入企业邮箱或公网 SMTP 即可自动进行公网发信。您也可以直接在线预览或一键下载该 ${attachmentFilename} 文件。`
+    details: `已生成独立 HTML 报告并成功就绪（目标邮箱: ${targetDisplay}）。目前未配置外部发信凭据，可在右上方“设置”中选择 Resend API 或 SMTP 即可自动进行公网发信。您也可以直接在线预览或一键下载该 ${attachmentFilename} 文件。`
   };
 }

@@ -46,12 +46,15 @@ app.get("/api/status", (req, res) => {
 app.get("/api/config", (req, res) => {
   try {
     const config = getConfig();
-    // Mask password slightly for safety
+    // Mask password and API keys slightly for safety
     const safeConfig = {
       ...config,
       smtp: {
         ...config.smtp,
-        pass: config.smtp.pass ? "••••••••" : ""
+        pass: config.smtp.pass ? "••••••••" : "",
+        resendApiKey: config.smtp.resendApiKey
+          ? config.smtp.resendApiKey.slice(0, 5) + "••••••••"
+          : ""
       }
     };
     res.json(safeConfig);
@@ -65,9 +68,14 @@ app.post("/api/config", (req, res) => {
   try {
     const payload = req.body;
     // Don't overwrite password with masked dots
-    if (payload.smtp && payload.smtp.pass === "••••••••") {
+    if (payload.smtp) {
       const current = getConfig();
-      payload.smtp.pass = current.smtp.pass;
+      if (payload.smtp.pass === "••••••••") {
+        payload.smtp.pass = current.smtp.pass;
+      }
+      if (payload.smtp.resendApiKey && payload.smtp.resendApiKey.includes("••••••••")) {
+        payload.smtp.resendApiKey = current.smtp.resendApiKey;
+      }
     }
     const updated = updateConfig(payload);
     res.json({ success: true, config: updated });
@@ -80,8 +88,12 @@ app.post("/api/config", (req, res) => {
 app.post("/api/test-smtp", async (req, res) => {
   try {
     const smtpPayload = req.body;
+    const current = getConfig();
     if (smtpPayload.pass === "••••••••") {
-      smtpPayload.pass = getConfig().smtp.pass;
+      smtpPayload.pass = current.smtp.pass;
+    }
+    if (smtpPayload.resendApiKey && smtpPayload.resendApiKey.includes("••••••••")) {
+      smtpPayload.resendApiKey = current.smtp.resendApiKey;
     }
     const result = await verifySmtpConnection(smtpPayload);
     res.json(result);
