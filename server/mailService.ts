@@ -1,10 +1,45 @@
 import dns from "dns";
+import net from "net";
 import nodemailer from "nodemailer";
 import { DigestReport, SmtpConfig } from "../src/types.js";
 
 // Ensure Node.js resolves IPv4 addresses first to avoid ENETUNREACH on cloud platforms like Render / Docker
 if (typeof dns.setDefaultResultOrder === "function") {
   dns.setDefaultResultOrder("ipv4first");
+}
+
+// Helper to create a robust nodemailer transporter with IPv4 pre-resolution
+// This prevents Nodemailer's internal random IPv4/IPv6 selector from hitting IPv6 on Render
+async function createSafeTransporter(effective: SmtpConfig) {
+  let connectHost = effective.host;
+  const servername = effective.host;
+
+  if (effective.host && !net.isIP(effective.host)) {
+    try {
+      const addresses = await dns.promises.resolve4(effective.host);
+      if (addresses && addresses.length > 0) {
+        connectHost = addresses[0];
+      }
+    } catch (dnsErr) {
+      console.warn(`DNS resolve4 for ${effective.host} failed, falling back to hostname:`, dnsErr);
+    }
+  }
+
+  return nodemailer.createTransport({
+    host: connectHost,
+    port: effective.port,
+    secure: effective.secure,
+    auth: effective.user ? { user: effective.user, pass: effective.pass } : undefined,
+    family: 4,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+    servername: servername,
+    tls: {
+      servername: servername,
+      rejectUnauthorized: false
+    }
+  } as any);
 }
 
 // Helper to resolve effective SMTP configuration
@@ -33,19 +68,7 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
 
   try {
     const effective = getEffectiveSmtp(config);
-    const transporter = nodemailer.createTransport({
-      host: effective.host,
-      port: effective.port,
-      secure: effective.secure,
-      auth: effective.user ? { user: effective.user, pass: effective.pass } : undefined,
-      family: 4, // Force IPv4 connection to prevent ENETUNREACH errors on cloud hosts
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 20000,
-      tls: {
-        rejectUnauthorized: false
-      }
-    } as any);
+    const transporter = await createSafeTransporter(effective);
 
     await transporter.verify();
     return { success: true, message: "SMTP 服务器连接测试成功！" };
@@ -76,19 +99,7 @@ export async function sendDigestEmail(
   // If SMTP host is configured, try sending real email
   if (smtp.host && (smtp.user || smtp.port === 25)) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtp.host,
-        port: smtp.port,
-        secure: smtp.secure,
-        auth: smtp.user ? { user: smtp.user, pass: smtp.pass } : undefined,
-        family: 4, // Force IPv4 connection to prevent ENETUNREACH errors on cloud hosts
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 20000,
-        tls: {
-          rejectUnauthorized: false
-        }
-      } as any);
+      const transporter = await createSafeTransporter(smtp);
 
       const info = await transporter.sendMail({
         from: smtp.from,
