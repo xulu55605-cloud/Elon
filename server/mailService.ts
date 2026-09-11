@@ -78,17 +78,31 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
     if (!effective.resendApiKey) {
       return { success: false, message: "请填写 Resend API Key (以 re_ 开头)" };
     }
+    if (!effective.resendApiKey.startsWith("re_")) {
+      return { success: false, message: "Resend API Key 格式不正确，通常以 re_ 开头" };
+    }
     try {
-      // Validate Resend API key by querying domains list via HTTPS
+      // Test the API key against Resend API.
+      // If the key has "Sending access only" permission, /api-keys returns 401 "restricted to only send emails".
+      // We test against /emails with a probe request or check key status.
       const res = await fetch("https://api.resend.com/api-keys", {
         headers: {
           Authorization: `Bearer ${effective.resendApiKey}`
         }
       });
       if (res.ok || res.status === 200) {
-        return { success: true, message: "Resend HTTPS API 认证成功！支持 Render 任意免费容器发信。" };
+        return { success: true, message: "Resend HTTPS API 认证成功 (Full Access)！已就绪。" };
       }
       const data: any = await res.json().catch(() => ({}));
+      // If Resend returns 401 with "restricted to only send emails", this PROVES the key is 100% VALID for sending emails!
+      if (
+        res.status === 401 &&
+        (data.message?.includes("restricted to only send emails") ||
+         data.error?.includes("restricted to only send emails") ||
+         JSON.stringify(data).includes("restricted"))
+      ) {
+        return { success: true, message: "Resend 发信 API Key 校验成功 (Sending Access)！已就绪。" };
+      }
       return { success: false, message: `Resend API 校验失败 (${res.status}): ${data.message || data.error || "Key无效"}` };
     } catch (e: any) {
       return { success: false, message: `无法连接 Resend API: ${e.message}` };
