@@ -294,7 +294,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClick={() =>
                   setFormData({
                     ...formData,
-                    smtp: { ...formData.smtp, mode: "resend" }
+                    smtp: {
+                      ...formData.smtp,
+                      mode: "resend",
+                      from:
+                        !formData.smtp.from || formData.smtp.from.includes("@gmail.com") || formData.smtp.from.includes("noreply@digest.local")
+                          ? "Elon Musk Daily Digest <onboarding@resend.dev>"
+                          : formData.smtp.from
+                    }
                   })
                 }
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
@@ -311,7 +318,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClick={() =>
                   setFormData({
                     ...formData,
-                    smtp: { ...formData.smtp, mode: "smtp" }
+                    smtp: {
+                      ...formData.smtp,
+                      mode: "smtp",
+                      from:
+                        formData.smtp.from?.includes("onboarding@resend.dev")
+                          ? formData.smtp.user
+                            ? `Elon Musk Daily Digest <${formData.smtp.user}>`
+                            : "Elon Musk Daily Digest <noreply@digest.local>"
+                          : formData.smtp.from
+                    }
                   })
                 }
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${

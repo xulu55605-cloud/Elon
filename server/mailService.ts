@@ -50,10 +50,15 @@ export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig
   const user = (customConfig?.user || process.env.SMTP_USER || "").trim();
   const pass = (customConfig?.pass || process.env.SMTP_PASS || "").trim();
   let from = (customConfig?.from || process.env.SMTP_FROM || "").trim();
-  if (!from || from.includes("noreply@digest.local")) {
-    if (mode === "resend") {
+
+  if (mode === "resend") {
+    // Resend requires verified domain. If user still has @gmail.com or unverified default,
+    // we must fall back to the built-in free onboarding domain 'onboarding@resend.dev'
+    if (!from || from.includes("@gmail.com") || from.includes("noreply@digest.local")) {
       from = "Elon Musk Daily Digest <onboarding@resend.dev>";
-    } else {
+    }
+  } else {
+    if (!from || from.includes("noreply@digest.local") || from.includes("onboarding@resend.dev")) {
       from = user ? `Elon Musk Daily Digest <${user}>` : "Elon Musk Daily Digest <noreply@digest.local>";
     }
   }
