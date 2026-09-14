@@ -17,9 +17,42 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
         return { bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" };
       case "Politics & Economy":
         return { bg: "#F8FAFC", text: "#334155", border: "#E2E8F0" };
+      case "小米汽车 SU7 / EV":
+        return { bg: "#FFF7ED", text: "#EA580C", border: "#FFEDD5" };
+      case "小米手机 / 澎湃OS":
+        return { bg: "#EFF6FF", text: "#2563EB", border: "#DBEAFE" };
+      case "小米生态链 / 战略":
+        return { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0" };
       default:
         return { bg: "#F1F5F9", text: "#475569", border: "#CBD5E1" };
     }
+  };
+
+  const getFigureBadge = (figure?: string) => {
+    if (figure && figure.includes("雷军")) {
+      return `<span style="display:inline-block;padding:3px 10px;font-size:12px;font-weight:700;color:#FFFFFF;background-color:#EA580C;border-radius:6px;margin-right:6px;letter-spacing:0.5px;">🇨🇳 雷军 (Lei Jun)</span>`;
+    }
+    return `<span style="display:inline-block;padding:3px 10px;font-size:12px;font-weight:700;color:#FFFFFF;background-color:#0F172A;border-radius:6px;margin-right:6px;letter-spacing:0.5px;">🚀 Elon Musk</span>`;
+  };
+
+  const getPlatformBadge = (platform?: string) => {
+    if (!platform) return "";
+    if (platform.includes("微信公众号") || platform.includes("公众号")) {
+      return `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;color:#07C160;background:#E8F8F0;border:1px solid #A7E9C6;border-radius:6px;margin-right:6px;">💬 微信公众号</span>`;
+    }
+    if (platform.includes("视频号")) {
+      return `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;color:#EA580C;background:#FFF7ED;border:1px solid #FFEDD5;border-radius:6px;margin-right:6px;">🎬 微信视频号</span>`;
+    }
+    if (platform.includes("B站") || platform.includes("Bilibili") || platform.includes("哔哩哔哩")) {
+      return `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;color:#00AEEC;background:#E6F7FF;border:1px solid #BAE7FF;border-radius:6px;margin-right:6px;">📺 哔哩哔哩 (B站)</span>`;
+    }
+    if (platform.includes("抖音") || platform.includes("Douyin")) {
+      return `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;color:#111827;background:#F3F4F6;border:1px solid #D1D5DB;border-radius:6px;margin-right:6px;">🎵 抖音 (Douyin)</span>`;
+    }
+    if (platform.includes("微博") || platform.includes("Weibo")) {
+      return `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;color:#E11D48;background:#FFF1F2;border:1px solid #FECDD3;border-radius:6px;margin-right:6px;">🔴 微博 (Weibo)</span>`;
+    }
+    return `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;color:#0F172A;background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;margin-right:6px;">𝕏 X (Twitter)</span>`;
   };
 
   const getImpactBadge = (level: string) => {
@@ -36,6 +69,11 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
     .map((post, index) => {
       const catStyle = getCategoryColor(post.category);
       const impactHtml = getImpactBadge(post.impactLevel);
+      const figureHtml = getFigureBadge(post.figure);
+      const platformHtml = getPlatformBadge(post.platform);
+      const isLeiJun = (post.figure && post.figure.includes("雷军")) || post.category.includes("小米");
+      const quoteLabel = isLeiJun ? "雷军 原话引用:" : "Elon Musk 原文引用:";
+      const sourceUrl = post.sourceUrl || (isLeiJun ? "https://weibo.com/leijun" : "https://x.com/elonmusk");
       const tagsHtml = (post.tags || [])
         .map(
           (t) =>
@@ -47,10 +85,12 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
       <!-- Post Card ${index + 1} -->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
         <tr>
-          <td style="padding:18px 24px;border-bottom:1px solid #F1F5F9;background:#FAFAFA;">
+          <td style="padding:16px 24px;border-bottom:1px solid #F1F5F9;background:${isLeiJun ? "#FFFBF5" : "#FAFAFA"};">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="vertical-align:middle;">
+                  ${figureHtml}
+                  ${platformHtml}
                   <span style="display:inline-block;padding:3px 10px;font-size:12px;font-weight:600;color:${catStyle.text};background:${catStyle.bg};border:1px solid ${catStyle.border};border-radius:6px;margin-right:8px;">
                     ${post.category}
                   </span>
@@ -70,15 +110,15 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
               ${index + 1}. ${post.topic}
             </h3>
 
-            <!-- Chinese translation -->
-            <div style="margin-bottom:14px;padding:12px 14px;background:#F8FAFC;border-left:4px solid #0284C7;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;color:#1E293B;">
-              <div style="font-size:11px;font-weight:700;color:#0284C7;text-transform:uppercase;margin-bottom:4px;letter-spacing:0.5px;">核心内容译文</div>
+            <!-- Chinese translation / content -->
+            <div style="margin-bottom:14px;padding:12px 14px;background:#F8FAFC;border-left:4px solid ${isLeiJun ? "#EA580C" : "#0284C7"};border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;color:#1E293B;">
+              <div style="font-size:11px;font-weight:700;color:${isLeiJun ? "#EA580C" : "#0284C7"};text-transform:uppercase;margin-bottom:4px;letter-spacing:0.5px;">核心内容精粹</div>
               ${post.translation}
             </div>
 
             <!-- Original Quote -->
             <div style="margin-bottom:14px;padding:10px 14px;background:#FFF;border:1px dashed #CBD5E1;border-radius:6px;font-size:13px;line-height:1.5;color:#475569;font-style:italic;">
-              <span style="color:#94A3B8;font-weight:600;font-style:normal;margin-right:4px;">Elon Musk原话引用:</span>
+              <span style="color:#94A3B8;font-weight:600;font-style:normal;margin-right:4px;">${quoteLabel}</span>
               "${post.originalText}"
             </div>
 
@@ -87,7 +127,7 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
               post.summary
                 ? `
             <div style="margin-bottom:16px;font-size:13px;line-height:1.6;color:#334155;">
-              <strong style="color:#0F172A;">💡 产业与市场解读:</strong> ${post.summary}
+              <strong style="color:#0F172A;">💡 产业与市场透视:</strong> ${post.summary}
             </div>
             `
                 : ""
@@ -103,7 +143,7 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
                 </td>
                 <td style="text-align:right;vertical-align:middle;">
                   ${tagsHtml}
-                  <a href="${post.sourceUrl || "https://x.com/elonmusk"}" target="_blank" style="display:inline-block;margin-left:8px;font-size:12px;font-weight:600;color:#0284C7;text-decoration:none;">查看原帖 &rarr;</a>
+                  <a href="${sourceUrl}" target="_blank" style="display:inline-block;margin-left:8px;font-size:12px;font-weight:600;color:${isLeiJun ? "#EA580C" : "#0284C7"};text-decoration:none;">查看原动态 &rarr;</a>
                 </td>
               </tr>
             </table>
@@ -129,7 +169,7 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Elon Musk 每日最新动态内参简报 - ${date}</title>
+  <title>Elon Musk & 雷军 每日社交动态内参简报 - ${date}</title>
   <style>
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
@@ -147,18 +187,18 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
       
       <!-- Top Header Banner -->
       <tr>
-        <td style="padding:32px 32px 28px 32px;background:linear-gradient(135deg, #0F172A 0%, #1E293B 100%);color:#FFFFFF;">
+        <td style="padding:32px 32px 28px 32px;background:linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #431407 100%);color:#FFFFFF;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
                 <div style="display:inline-block;padding:4px 10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;font-size:11px;font-weight:600;letter-spacing:1px;color:#38BDF8;text-transform:uppercase;margin-bottom:12px;">
-                  DAILY INTELLIGENCE BRIEFING
+                  DUAL TECH INTELLIGENCE · 双雄产业前瞻
                 </div>
                 <h1 style="margin:0 0 6px 0;font-size:24px;font-weight:800;letter-spacing:-0.5px;line-height:1.2;color:#FFFFFF;">
-                  Elon Musk 最新动态每日内参
+                  Elon Musk & 雷军 每日动态内参
                 </h1>
                 <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.4;">
-                  每日自动追踪 · 社交动态与战略前瞻 · 汇总报告
+                  SpaceX / Tesla / xAI · 小米汽车 / 澎湃OS / 人车家生态 · 合并精选简报
                 </p>
               </td>
               <td style="text-align:right;vertical-align:top;">
@@ -174,7 +214,7 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
           <div style="margin-top:20px;padding:8px 14px;background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:12px;color:#E2E8F0;">
             <strong style="color:#38BDF8;">专送邮箱:</strong> ${recipient}
             <span style="margin:0 8px;color:#475569;">|</span>
-            <span style="color:#94A3B8;">共收录 ${posts.length} 条重点动态</span>
+            <span style="color:#94A3B8;">合并收录 ${posts.length} 条马斯克与雷军重点动态</span>
           </div>
         </td>
       </tr>
@@ -193,7 +233,7 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
             keyInsights.length > 0
               ? `
           <div style="margin-top:16px;">
-            <div style="font-size:12px;font-weight:700;color:#0F172A;margin-bottom:8px;letter-spacing:0.5px;">⚡ 今日核心看点</div>
+            <div style="font-size:12px;font-weight:700;color:#0F172A;margin-bottom:8px;letter-spacing:0.5px;">⚡ 今日双雄核心看点</div>
             <ul style="margin:0;padding-left:20px;">
               ${keyInsightsHtml}
             </ul>
@@ -211,7 +251,7 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
             <h2 style="margin:0;font-size:16px;font-weight:700;color:#0F172A;display:inline-block;">
               📋 详细动态清单与解读 (${posts.length})
             </h2>
-            <span style="font-size:12px;color:#64748B;margin-left:8px;">涵盖 SpaceX, Tesla, xAI, X 与科技前沿</span>
+            <span style="font-size:12px;color:#64748B;margin-left:8px;">涵盖 SpaceX, Tesla, xAI, 小米汽车 SU7, 澎湃OS 与科技前沿</span>
           </div>
 
           ${postsHtml}
@@ -222,18 +262,12 @@ export function generateDigestHtml(report: Omit<DigestReport, "htmlContent">): s
       <tr>
         <td style="padding:24px 32px;background:#F1F5F9;border-top:1px solid #E2E8F0;text-align:center;">
           <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">
-            Elon Musk 社交媒体动态智能聚合机器人
+            Elon Musk & 雷军 社交动态智能聚合机器人
           </div>
           <div style="font-size:11px;color:#64748B;line-height:1.6;">
-            本文件由系统每日自动抓取、翻译、提炼并汇总生成，直接推送到指定邮箱 ${
-              (recipient || "xu.lu@cn.bosch.com, lxsury@163.com")
-                .split(/[,;\s]+/)
-                .map((r) => r.trim())
-                .filter(Boolean)
-                .map((email) => `<a href="mailto:${email}" style="color:#0284C7;text-decoration:none;font-weight:600;">${email}</a>`)
-                .join("、")
-            }。<br />
-            数据来源覆盖 X (@elonmusk)、Tesla、SpaceX、xAI 官方发布与全球科技财经资讯。
+            本内参由系统每日自动抓取、智能提炼、合并汇总生成，直接推送到指定专送邮箱：<br />
+            <a href="mailto:${recipient}" style="color:#0284C7;text-decoration:none;font-weight:600;">${recipient}</a><br />
+            数据来源全面覆盖：<strong>Elon Musk</strong> 官方发布（𝕏 @elonmusk · Tesla · SpaceX · xAI）与 <strong>雷军</strong> 国内头部社交媒体矩阵（微信公众号 · 微信视频号 · 哔哩哔哩B站 · 抖音 · 新浪微博）及科技产业深度内参。
           </div>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid #E2E8F0;font-size:10px;color:#94A3B8;">
             Report ID: ${report.id} · Confidential & Internal Reference

@@ -2,14 +2,14 @@
   "enabled": true,
   "time": "08:00",
   "timezone": "Asia/Shanghai",
-  "recipientEmail": "xu.lu@cn.bosch.com, lxsury@163.com",
+  "recipientEmail": "xulu55605@gmail.com",
   "smtp": {
     "host": "smtp.gmail.com",
     "port": 465,
     "secure": true,
     "user": "xulu55605@gmail.com",
     "pass": "ggwamjlzctrfdixw",
-    "from": "Elon Musk Daily Digest <xulu55605@gmail.com>"
+    "from": "Elon Musk & 雷军 每日动态内参 <xulu55605@gmail.com>"
   },
   "lastRunAt": "2026-09-11T05:31:13.860Z",
   "nextRunAt": "2026-09-12T08:00:00.000Z",

@@ -1,7 +1,9 @@
 export interface MuskPost {
   id: string;
+  figure?: 'Elon Musk' | '雷军 (Lei Jun)' | string;
+  platform?: 'X (Twitter)' | '微信公众号' | '微信视频号' | 'B站 (Bilibili)' | '抖音 (Douyin)' | '微博 (Weibo)' | string;
   timestamp: string;
-  category: 'SpaceX / Starship' | 'Tesla / Robotaxi' | 'xAI / Grok' | 'X (Twitter)' | 'Tech & AI' | 'Politics & Economy' | 'Other';
+  category: 'SpaceX / Starship' | 'Tesla / Robotaxi' | 'xAI / Grok' | 'X (Twitter)' | 'Tech & AI' | 'Politics & Economy' | '小米汽车 SU7 / EV' | '小米手机 / 澎湃OS' | '小米生态链 / 战略' | 'Other' | string;
   topic: string;
   originalText: string;
   translation: string;
@@ -37,8 +39,11 @@ export interface DigestReport {
 }
 
 export interface SmtpConfig {
-  mode?: 'smtp' | 'resend';
+  mode?: 'smtp' | 'resend' | 'brevo';
   resendApiKey?: string;
+  brevoApiKey?: string;
+  brevoSenderEmail?: string;
+  brevoSenderName?: string;
   host: string;
   port: number;
   secure: boolean;

@@ -69,7 +69,7 @@ export const DeliveryHistoryModal: React.FC<DeliveryHistoryModalProps> = ({
                 历史简报归档与发送记录
               </h3>
               <p className="text-xs text-slate-500">
-                已收录 {reports.length} 期自动/手动抓取的 Elon Musk 动态简报
+                已收录 {reports.length} 期自动/手动抓取的 Elon Musk & 雷军 动态简报
               </p>
             </div>
           </div>

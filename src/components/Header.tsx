@@ -24,25 +24,25 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Brand Info */}
           <div className="flex items-start sm:items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white flex-shrink-0">
-              <span className="font-mono text-xl font-black tracking-tighter">𝕏</span>
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-orange-500 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white flex-shrink-0">
+              <span className="font-bold text-sm tracking-tight text-center leading-tight">𝕏 + 小米</span>
             </div>
             <div>
               <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                 <h1 className="text-xl font-bold tracking-tight text-white">
-                  Elon Musk 社交动态每日简报系统
+                  Elon Musk & 雷军 社交动态每日简报系统
                 </h1>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-500/15 text-sky-400 border border-sky-500/30">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-500/15 text-orange-400 border border-orange-500/30">
                   <ShieldCheck className="w-3 h-3 mr-1" />
-                  自动化引擎
+                  双雄科技内参
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1 flex items-center flex-wrap gap-x-2">
-                <span>每日抓取 𝕏 最新消息</span>
+                <span>马斯克 (𝕏) & 雷军 (微信公众号/视频号/B站/抖音/微博)</span>
                 <span className="text-slate-600">·</span>
                 <span>智能汇总生成 HTML 报告</span>
                 <span className="text-slate-600">·</span>
-                <span className="text-sky-300 font-mono">专送: {status?.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com"}</span>
+                <span className="text-sky-300 font-mono">专送: {status?.recipientEmail || "xulu55605@gmail.com"}</span>
               </p>
             </div>
           </div>

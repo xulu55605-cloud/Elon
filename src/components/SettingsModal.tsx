@@ -215,6 +215,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   接收邮箱地址（支持输入多个，以逗号或分号分隔）
                 </label>
                 <div className="flex items-center space-x-1.5 text-[11px]">
+                  {!formData.recipientEmail?.includes("xulu55605@gmail.com") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = formData.recipientEmail ? formData.recipientEmail.trim() : "";
+                        const updated = current ? `xulu55605@gmail.com, ${current}` : "xulu55605@gmail.com";
+                        setFormData({ ...formData, recipientEmail: updated });
+                      }}
+                      className="text-sky-600 hover:text-sky-700 font-medium hover:underline"
+                    >
+                      + 设为 xulu55605@gmail.com
+                    </button>
+                  )}
                   {!formData.recipientEmail?.includes("lxsury@163.com") && (
                     <button
                       type="button"
@@ -223,22 +236,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         const updated = current ? `${current}, lxsury@163.com` : "lxsury@163.com";
                         setFormData({ ...formData, recipientEmail: updated });
                       }}
-                      className="text-sky-600 hover:text-sky-700 font-medium hover:underline"
+                      className="text-slate-500 hover:text-slate-700 font-medium hover:underline"
                     >
-                      + 加入 lxsury@163.com
-                    </button>
-                  )}
-                  {!formData.recipientEmail?.includes("xu.lu@cn.bosch.com") && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const current = formData.recipientEmail ? formData.recipientEmail.trim() : "";
-                        const updated = current ? `xu.lu@cn.bosch.com, ${current}` : "xu.lu@cn.bosch.com";
-                        setFormData({ ...formData, recipientEmail: updated });
-                      }}
-                      className="text-sky-600 hover:text-sky-700 font-medium hover:underline"
-                    >
-                      + 加入 xu.lu@cn.bosch.com
+                      + lxsury@163.com
                     </button>
                   )}
                 </div>
@@ -250,7 +250,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, recipientEmail: e.target.value })
                 }
-                placeholder="xu.lu@cn.bosch.com, lxsury@163.com"
+                placeholder="xulu55605@gmail.com"
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-mono"
               />
               
@@ -288,7 +288,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Mode Selector Tabs */}
-            <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    smtp: {
+                      ...formData.smtp,
+                      mode: "brevo",
+                      brevoSenderEmail: formData.smtp.brevoSenderEmail || formData.smtp.user || "xulu55605@gmail.com",
+                      brevoSenderName: formData.smtp.brevoSenderName || "Elon Musk Daily Digest"
+                    }
+                  })
+                }
+                className={`py-1.5 px-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-1 ${
+                  (formData.smtp.mode || "brevo") === "brevo"
+                    ? "bg-white text-emerald-700 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="truncate">Brevo API (推荐 Render 免费)</span>
+              </button>
               <button
                 type="button"
                 onClick={() =>
@@ -304,14 +326,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     }
                   })
                 }
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
-                  (formData.smtp.mode || "smtp") === "resend"
+                className={`py-1.5 px-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-1 ${
+                  formData.smtp.mode === "resend"
                     ? "bg-white text-sky-700 shadow-xs"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Resend HTTPS API (推荐 Render 免费容器)</span>
+                <span className="truncate">Resend API (需域名)</span>
               </button>
               <button
                 type="button"
@@ -330,18 +351,132 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     }
                   })
                 }
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
-                  formData.smtp.mode === "smtp" || !formData.smtp.mode
-                    ? "bg-white text-sky-700 shadow-xs"
+                className={`py-1.5 px-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-1 ${
+                  formData.smtp.mode === "smtp"
+                    ? "bg-white text-indigo-700 shadow-xs"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <span>标准 SMTP (Gmail / 企业邮箱)</span>
+                <span className="truncate">标准 SMTP (直连主机)</span>
               </button>
             </div>
 
-            {/* If Resend Mode is selected */}
-            {(formData.smtp.mode || "smtp") === "resend" ? (
+            {/* Mode 1: Brevo HTTPS REST API Mode (Recommended for Render) */}
+            {(formData.smtp.mode || "brevo") === "brevo" && (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-lg text-xs text-emerald-900 space-y-1">
+                  <div className="font-semibold flex items-center text-emerald-950">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                    Render 最佳解决方案：Brevo 免域名 HTTPS 邮件通道
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-emerald-800">
+                    与 Resend 不同，<strong>Brevo 不需要你自己购买或配置任何独立域名</strong>，只要用你任意常用邮箱注册即可免费使用！每天免费赠送 300 封邮件，支持向 <code>xu.lu@cn.bosch.com</code> 和 <code>lxsury@163.com</code> 自由发信。走 443 HTTPS 端口，在 Render 免费容器上 100% 畅通。
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-slate-700">
+                      Brevo API Key (通常以 xkeysib- 开头)
+                    </label>
+                    <a
+                      href="https://app.brevo.com/settings/keys/api"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-medium hover:underline flex items-center"
+                    >
+                      前往 brevo.com 免费获取 Key →
+                    </a>
+                  </div>
+                  <input
+                    type="password"
+                    value={formData.smtp.brevoApiKey || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        smtp: { ...formData.smtp, brevoApiKey: e.target.value }
+                      })
+                    }
+                    placeholder="xkeysib-xxxxxxxxxxxxxxxxxxxxxxxx..."
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    注册 brevo.com（原 Sendinblue，免信用卡），进入 Settings → SMTP & API → API Keys，点击 <strong>Generate a new API key</strong>，复制并粘贴于此处即可。
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      注册 Brevo 所用的发件邮箱
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.smtp.brevoSenderEmail || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          smtp: { ...formData.smtp, brevoSenderEmail: e.target.value }
+                        })
+                      }
+                      placeholder="例如: xulu55605@gmail.com"
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      填写你注册登录 Brevo 账号时使用的邮箱地址。
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      发件人显示名称
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.smtp.brevoSenderName || "Elon Musk Daily Digest"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          smtp: { ...formData.smtp, brevoSenderName: e.target.value }
+                        })
+                      }
+                      placeholder="Elon Musk Daily Digest"
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Test Button & Result for Brevo */}
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={handleTestSmtpConnection}
+                    disabled={isTesting || !formData.smtp.brevoApiKey}
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 disabled:opacity-50 transition-colors shadow-xs"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? "animate-spin" : ""}`} />
+                    <span>{isTesting ? "正在校验 API Key..." : "测试 Brevo API 连通性"}</span>
+                  </button>
+
+                  {testResult && (
+                    <div
+                      className={`text-xs flex items-center ${
+                        testResult.success ? "text-emerald-700 font-medium" : "text-rose-600"
+                      }`}
+                    >
+                      {testResult.success ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
+                      )}
+                      <span>{testResult.message}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Mode 2: If Resend Mode is selected */}
+            {formData.smtp.mode === "resend" && (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                 <div className="p-3 bg-sky-50/80 border border-sky-200 rounded-lg text-xs text-sky-800 space-y-1">
                   <div className="font-semibold flex items-center text-sky-900">
@@ -433,7 +568,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
                 </div>
               </div>
-            ) : (
+            )}
+
+            {/* Mode 3: Standard SMTP Mode */}
+            {formData.smtp.mode === "smtp" && (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                 {/* Presets */}
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200">

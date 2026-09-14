@@ -25,8 +25,11 @@ let currentConfig: ScheduleConfig = {
   timezone: "Asia/Shanghai",
   recipientEmail: "xu.lu@cn.bosch.com, lxsury@163.com",
   smtp: {
-    mode: (process.env.EMAIL_MODE as any) || (process.env.RESEND_API_KEY ? "resend" : "smtp"),
+    mode: (process.env.EMAIL_MODE as any) || (process.env.BREVO_API_KEY ? "brevo" : process.env.RESEND_API_KEY ? "resend" : "smtp"),
     resendApiKey: process.env.RESEND_API_KEY || "",
+    brevoApiKey: process.env.BREVO_API_KEY || "",
+    brevoSenderEmail: process.env.BREVO_SENDER_EMAIL || "xulu55605@gmail.com",
+    brevoSenderName: process.env.BREVO_SENDER_NAME || "Elon Musk Daily Digest",
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: Number(process.env.SMTP_PORT || 465),
     secure: process.env.SMTP_SECURE !== "false",
@@ -48,12 +51,11 @@ function loadState() {
     if (fs.existsSync(CONFIG_FILE)) {
       const data = fs.readFileSync(CONFIG_FILE, "utf-8");
       currentConfig = { ...currentConfig, ...JSON.parse(data) };
-      // Ensure target recipient is always defaulted if blank or missing lxsury
       if (!currentConfig.recipientEmail) {
-        currentConfig.recipientEmail = "xu.lu@cn.bosch.com, lxsury@163.com";
-      } else if (!currentConfig.recipientEmail.includes("lxsury@163.com")) {
-        currentConfig.recipientEmail = `${currentConfig.recipientEmail}, lxsury@163.com`;
+        currentConfig.recipientEmail = "xulu55605@gmail.com";
       }
+    } else {
+      currentConfig.recipientEmail = "xulu55605@gmail.com";
     }
   } catch (e) {
     console.error("Error reading config file:", e);
@@ -99,7 +101,7 @@ export async function executeDailyDigest(options?: {
   }
 
   isFetchingInProgress = true;
-  const targetRecipient = options?.recipient || currentConfig.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com";
+  const targetRecipient = options?.recipient || currentConfig.recipientEmail || "xulu55605@gmail.com";
   const now = new Date();
   const dateStr = now.toLocaleDateString("zh-CN", {
     timeZone: currentConfig.timezone || "Asia/Shanghai",
@@ -111,14 +113,14 @@ export async function executeDailyDigest(options?: {
   const reportId = `report-${dateStr}-${Date.now()}`;
 
   try {
-    console.log(`[Scheduler] Fetching Elon Musk latest updates for ${targetRecipient}...`);
+    console.log(`[Scheduler] Fetching Elon Musk & Lei Jun latest updates for ${targetRecipient}...`);
     const { executiveSummary, keyInsights, posts, sourceMode } = await fetchElonMuskLiveUpdates();
 
     const partialReport: Omit<DigestReport, "htmlContent"> = {
       id: reportId,
       generatedAt: now.toISOString(),
       date: dateStr,
-      title: `Elon Musk 每日最新动态内参 - ${dateStr}`,
+      title: `Elon Musk & 雷军 每日动态内参 - ${dateStr}`,
       totalPosts: posts.length,
       executiveSummary,
       keyInsights,

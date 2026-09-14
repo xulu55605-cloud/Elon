@@ -78,13 +78,13 @@ export default function App() {
   const handleFetchNow = async () => {
     if (isFetching) return;
     setIsFetching(true);
-    showNotification("已启动抓取引擎：正在检索 Elon Musk 最新推文与动态...", "info");
+    showNotification("已启动抓取引擎：正在检索 Elon Musk 与 雷军 最新动态...", "info");
 
     try {
       const res = await fetch("/api/fetch-and-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipient: config?.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com" }),
+        body: JSON.stringify({ recipient: config?.recipientEmail || "xulu55605@gmail.com" }),
       }).then((r) => r.json());
 
       if (res.success && res.report) {
@@ -98,7 +98,7 @@ export default function App() {
         setReportsList(reportsRes || []);
 
         showNotification(
-          `动态抓取成功！已汇总生成 HTML 简报并发送至 ${res.report.recipient}`,
+          `双雄动态抓取成功！已汇总生成 HTML 简报并发送至 ${res.report.recipient}`,
           "success"
         );
       } else {
@@ -116,7 +116,7 @@ export default function App() {
     if (!targetId) return;
 
     setIsSending(true);
-    const targetRecipient = config?.recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com";
+    const targetRecipient = config?.recipientEmail || "xulu55605@gmail.com";
     showNotification(`正在推送 HTML 简报至 ${targetRecipient}...`, "info");
 
     try {

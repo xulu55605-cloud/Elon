@@ -54,6 +54,9 @@ app.get("/api/config", (req, res) => {
         pass: config.smtp.pass ? "••••••••" : "",
         resendApiKey: config.smtp.resendApiKey
           ? config.smtp.resendApiKey.slice(0, 5) + "••••••••"
+          : "",
+        brevoApiKey: config.smtp.brevoApiKey
+          ? config.smtp.brevoApiKey.slice(0, 8) + "••••••••"
           : ""
       }
     };
@@ -76,6 +79,9 @@ app.post("/api/config", (req, res) => {
       if (payload.smtp.resendApiKey && payload.smtp.resendApiKey.includes("••••••••")) {
         payload.smtp.resendApiKey = current.smtp.resendApiKey;
       }
+      if (payload.smtp.brevoApiKey && payload.smtp.brevoApiKey.includes("••••••••")) {
+        payload.smtp.brevoApiKey = current.smtp.brevoApiKey;
+      }
     }
     const updated = updateConfig(payload);
     res.json({ success: true, config: updated });
@@ -94,6 +100,9 @@ app.post("/api/test-smtp", async (req, res) => {
     }
     if (smtpPayload.resendApiKey && smtpPayload.resendApiKey.includes("••••••••")) {
       smtpPayload.resendApiKey = current.smtp.resendApiKey;
+    }
+    if (smtpPayload.brevoApiKey && smtpPayload.brevoApiKey.includes("••••••••")) {
+      smtpPayload.brevoApiKey = current.smtp.brevoApiKey;
     }
     const result = await verifySmtpConnection(smtpPayload);
     res.json(result);
@@ -151,7 +160,7 @@ app.get("/api/reports/:id/download", (req, res) => {
     if (!report) {
       return res.status(404).send("Report not found");
     }
-    const filename = `Elon_Musk_Daily_Digest_${report.date}.html`;
+    const filename = `Elon_Musk_Lei_Jun_Daily_Digest_${report.date}.html`;
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(report.htmlContent);
@@ -183,7 +192,7 @@ app.post("/api/send-email", async (req, res) => {
       return res.status(404).json({ success: false, error: "Report not found" });
     }
 
-    const targetRecipient = recipient || report.recipient || getConfig().recipientEmail || "xu.lu@cn.bosch.com, lxsury@163.com";
+    const targetRecipient = recipient || report.recipient || getConfig().recipientEmail || "xulu55605@gmail.com";
     const reportToSend = { ...report, recipient: targetRecipient };
 
     const result = await sendDigestEmail(reportToSend, getConfig().smtp);

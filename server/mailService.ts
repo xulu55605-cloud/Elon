@@ -44,8 +44,12 @@ async function createSafeTransporter(effective: SmtpConfig) {
 
 // Helper to resolve effective SMTP/Email configuration
 export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig {
-  const mode = customConfig?.mode || (process.env.EMAIL_MODE as any) || (process.env.RESEND_API_KEY ? "resend" : "smtp");
+  const mode = customConfig?.mode || (process.env.EMAIL_MODE as any) || (process.env.BREVO_API_KEY ? "brevo" : process.env.RESEND_API_KEY ? "resend" : "smtp");
   const resendApiKey = (customConfig?.resendApiKey || process.env.RESEND_API_KEY || "").trim();
+  const brevoApiKey = (customConfig?.brevoApiKey || process.env.BREVO_API_KEY || "").trim();
+  const brevoSenderEmail = (customConfig?.brevoSenderEmail || process.env.BREVO_SENDER_EMAIL || customConfig?.user || "xulu55605@gmail.com").trim();
+  const defaultSenderName = "Elon Musk & 雷军 每日动态内参";
+  const brevoSenderName = (customConfig?.brevoSenderName || process.env.BREVO_SENDER_NAME || defaultSenderName).trim();
 
   const user = (customConfig?.user || process.env.SMTP_USER || "").trim();
   const pass = (customConfig?.pass || process.env.SMTP_PASS || "").trim();
@@ -55,17 +59,22 @@ export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig
     // Resend requires verified domain. If user still has @gmail.com or unverified default,
     // we must fall back to the built-in free onboarding domain 'onboarding@resend.dev'
     if (!from || from.includes("@gmail.com") || from.includes("noreply@digest.local")) {
-      from = "Elon Musk Daily Digest <onboarding@resend.dev>";
+      from = `${defaultSenderName} <onboarding@resend.dev>`;
     }
+  } else if (mode === "brevo") {
+    from = `${brevoSenderName} <${brevoSenderEmail}>`;
   } else {
     if (!from || from.includes("noreply@digest.local") || from.includes("onboarding@resend.dev")) {
-      from = user ? `Elon Musk Daily Digest <${user}>` : "Elon Musk Daily Digest <noreply@digest.local>";
+      from = user ? `${defaultSenderName} <${user}>` : `${defaultSenderName} <noreply@digest.local>`;
     }
   }
 
   return {
     mode,
     resendApiKey,
+    brevoApiKey,
+    brevoSenderEmail,
+    brevoSenderName,
     host: (customConfig?.host || process.env.SMTP_HOST || "").trim(),
     port: Number(customConfig?.port || process.env.SMTP_PORT || 587),
     secure: customConfig?.secure ?? (process.env.SMTP_SECURE === "true"),
@@ -78,6 +87,27 @@ export function getEffectiveSmtp(customConfig?: Partial<SmtpConfig>): SmtpConfig
 export async function verifySmtpConnection(config: SmtpConfig): Promise<{ success: boolean; message: string }> {
   const effective = getEffectiveSmtp(config);
 
+  // If using Brevo HTTP API mode
+  if (effective.mode === "brevo") {
+    if (!effective.brevoApiKey) {
+      return { success: false, message: "请填写 Brevo API Key (通常以 xkeysib- 开头)" };
+    }
+    try {
+      const res = await fetch("https://api.brevo.com/v3/account", {
+        headers: {
+          "api-key": effective.brevoApiKey
+        }
+      });
+      const data: any = await res.json().catch(() => ({}));
+      if (res.ok) {
+        return { success: true, message: `Brevo 认证成功！账户: ${data.email || '有效'}，每天赠送 300 封免费发信额度，支持发送给任何人。` };
+      }
+      return { success: false, message: `Brevo API 校验失败 (${res.status}): ${data.message || data.error || "Key无效"}` };
+    } catch (e: any) {
+      return { success: false, message: `无法连接 Brevo API: ${e.message}` };
+    }
+  }
+
   // If using Resend HTTP API mode
   if (effective.mode === "resend") {
     if (!effective.resendApiKey) {
@@ -87,9 +117,6 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
       return { success: false, message: "Resend API Key 格式不正确，通常以 re_ 开头" };
     }
     try {
-      // Test the API key against Resend API.
-      // If the key has "Sending access only" permission, /api-keys returns 401 "restricted to only send emails".
-      // We test against /emails with a probe request or check key status.
       const res = await fetch("https://api.resend.com/api-keys", {
         headers: {
           Authorization: `Bearer ${effective.resendApiKey}`
@@ -99,7 +126,6 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
         return { success: true, message: "Resend HTTPS API 认证成功 (Full Access)！已就绪。" };
       }
       const data: any = await res.json().catch(() => ({}));
-      // If Resend returns 401 with "restricted to only send emails", this PROVES the key is 100% VALID for sending emails!
       if (
         res.status === 401 &&
         (data.message?.includes("restricted to only send emails") ||
@@ -143,19 +169,69 @@ export async function sendDigestEmail(
 
   const targetDisplay = recipientList.length > 0 ? recipientList.join(", ") : rawRecipient;
   const toParam = recipientList.length > 0 ? recipientList : [rawRecipient];
-  const subject = `【Elon Musk 每日动态内参】${report.date} 汇总简报`;
+  const subject = `【Elon Musk & 雷军 每日动态内参】${report.date} 双雄科技简报`;
 
-  const attachmentFilename = `Elon_Musk_Daily_Digest_${report.date}.html`;
+  const attachmentFilename = `Elon_Musk_Lei_Jun_Daily_Digest_${report.date}.html`;
 
-  // 1. Resend HTTP API Mode (Bypasses all cloud provider port blocks like Render / AWS)
+  // 1. Brevo HTTPS REST API Mode (Bypasses all cloud port blocks + sends to any email recipient without domain verification!)
+  if (emailConfig.mode === "brevo" && emailConfig.brevoApiKey) {
+    try {
+      const payload: any = {
+        sender: {
+          name: emailConfig.brevoSenderName || "Elon Musk & 雷军 每日动态内参",
+          email: emailConfig.brevoSenderEmail || "xulu55605@gmail.com"
+        },
+        to: recipientList.map((email) => ({ email })),
+        subject: subject,
+        htmlContent: report.htmlContent,
+        textContent: `Elon Musk & 雷军 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
+        attachment: [
+          {
+            name: attachmentFilename,
+            content: Buffer.from(report.htmlContent).toString("base64")
+          }
+        ]
+      };
+
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": emailConfig.brevoApiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data: any = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      }
+
+      return {
+        success: true,
+        status: "sent",
+        details: `邮件已成功通过 Brevo HTTPS API 发送至 ${targetDisplay} (Message ID: ${data.messageId || data.id || 'ok'})，附件已包含 ${attachmentFilename}。`
+      };
+    } catch (err: any) {
+      console.error("Failed to send real email via Brevo API:", err);
+      return {
+        success: false,
+        status: "failed",
+        details: `尝试通过 Brevo API 发送至 ${targetDisplay} 失败: ${err?.message || err}。`,
+        error: err?.message || String(err)
+      };
+    }
+  }
+
+  // 2. Resend HTTP API Mode (Bypasses all cloud provider port blocks like Render / AWS)
   if (emailConfig.mode === "resend" && emailConfig.resendApiKey) {
     try {
       const payload: any = {
-        from: emailConfig.from || "Elon Musk Daily Digest <onboarding@resend.dev>",
+        from: emailConfig.from || "Elon Musk & 雷军 每日动态内参 <onboarding@resend.dev>",
         to: toParam,
         subject: subject,
         html: report.htmlContent,
-        text: `Elon Musk 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
+        text: `Elon Musk & 雷军 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
         attachments: [
           {
             filename: attachmentFilename,
@@ -194,7 +270,7 @@ export async function sendDigestEmail(
     }
   }
 
-  // 2. Standard SMTP Mode
+  // 3. Standard SMTP Mode
   if (emailConfig.host && (emailConfig.user || emailConfig.port === 25)) {
     try {
       const transporter = await createSafeTransporter(emailConfig);
@@ -203,7 +279,7 @@ export async function sendDigestEmail(
         from: emailConfig.from,
         to: toParam,
         subject: subject,
-        text: `Elon Musk 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
+        text: `Elon Musk & 雷军 每日动态内参 (${report.date})\n\n今日摘要:\n${report.executiveSummary}\n\n请在支持 HTML 的邮件客户端中查看完整图文排版，或打开附件中的 ${attachmentFilename}。`,
         html: report.htmlContent,
         attachments: [
           {
