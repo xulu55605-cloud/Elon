@@ -18,24 +18,24 @@ if (!fs.existsSync(DATA_DIR)) {
   }
 }
 
-// Default Configuration with the requested recipients
+// Default Configuration with the requested recipients and Brevo API
 let currentConfig: ScheduleConfig = {
   enabled: true,
-  time: "08:00",
+  time: "15:30",
   timezone: "Asia/Shanghai",
-  recipientEmail: "xu.lu@cn.bosch.com, lxsury@163.com",
+  recipientEmail: "xulu55605@gmail.com, lxsury@163.com",
   smtp: {
-    mode: (process.env.EMAIL_MODE as any) || (process.env.BREVO_API_KEY ? "brevo" : process.env.RESEND_API_KEY ? "resend" : "smtp"),
+    mode: (process.env.EMAIL_MODE as any) || "brevo",
     resendApiKey: process.env.RESEND_API_KEY || "",
     brevoApiKey: process.env.BREVO_API_KEY || "",
     brevoSenderEmail: process.env.BREVO_SENDER_EMAIL || "xulu55605@gmail.com",
-    brevoSenderName: process.env.BREVO_SENDER_NAME || "Elon Musk Daily Digest",
+    brevoSenderName: process.env.BREVO_SENDER_NAME || "Elon Musk & 雷军 每日动态内参",
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: Number(process.env.SMTP_PORT || 465),
     secure: process.env.SMTP_SECURE !== "false",
     user: process.env.SMTP_USER || "xulu55605@gmail.com",
-    pass: process.env.SMTP_PASS || "ggwamjlzctrfdixw",
-    from: process.env.SMTP_FROM || "Elon Musk Daily Digest <xulu55605@gmail.com>"
+    pass: process.env.SMTP_PASS || "",
+    from: process.env.SMTP_FROM || "Elon Musk & 雷军 每日动态内参 <xulu55605@gmail.com>"
   },
   lastRunAt: undefined,
   nextRunAt: undefined,
@@ -52,10 +52,10 @@ function loadState() {
       const data = fs.readFileSync(CONFIG_FILE, "utf-8");
       currentConfig = { ...currentConfig, ...JSON.parse(data) };
       if (!currentConfig.recipientEmail) {
-        currentConfig.recipientEmail = "xulu55605@gmail.com";
+        currentConfig.recipientEmail = "xulu55605@gmail.com, lxsury@163.com";
       }
     } else {
-      currentConfig.recipientEmail = "xulu55605@gmail.com";
+      currentConfig.recipientEmail = "xulu55605@gmail.com, lxsury@163.com";
     }
   } catch (e) {
     console.error("Error reading config file:", e);
@@ -270,11 +270,16 @@ export function updateConfig(newConfig: Partial<ScheduleConfig>): ScheduleConfig
 }
 
 export function getSystemStatus(): SystemStatus {
+  const isConfigured = Boolean(
+    (currentConfig.smtp.mode === "brevo" && currentConfig.smtp.brevoApiKey) ||
+    (currentConfig.smtp.mode === "resend" && currentConfig.smtp.resendApiKey) ||
+    (currentConfig.smtp.host && currentConfig.smtp.user)
+  );
   return {
-    isConfigured: Boolean(currentConfig.smtp.host),
+    isConfigured,
     scheduleEnabled: currentConfig.enabled,
     nextRunTime: currentConfig.nextRunAt || "每日 " + currentConfig.time,
-    recipientEmail: currentConfig.recipientEmail || "xu.lu@cn.bosch.com",
+    recipientEmail: currentConfig.recipientEmail || "xulu55605@gmail.com, lxsury@163.com",
     totalReportsCount: reports.length,
     lastReportDate: reports[0]?.date,
     isFetching: isFetchingInProgress,

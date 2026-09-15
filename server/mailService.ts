@@ -159,7 +159,7 @@ export async function sendDigestEmail(
   customConfig?: Partial<SmtpConfig>
 ): Promise<{ success: boolean; status: 'sent' | 'simulated' | 'failed'; details: string; error?: string }> {
   const emailConfig = getEffectiveSmtp(customConfig);
-  const rawRecipient = report.recipient || process.env.DEFAULT_RECIPIENT || "xu.lu@cn.bosch.com, lxsury@163.com";
+  const rawRecipient = report.recipient || process.env.DEFAULT_RECIPIENT || "xulu55605@gmail.com, lxsury@163.com";
   
   // Parse multiple recipients (supports comma, semicolon, newline separated)
   const recipientList = rawRecipient

@@ -1,17 +1,21 @@
 {
   "enabled": true,
-  "time": "08:00",
+  "time": "15:30",
   "timezone": "Asia/Shanghai",
-  "recipientEmail": "xulu55605@gmail.com",
+  "recipientEmail": "xulu55605@gmail.com, lxsury@163.com",
   "smtp": {
+    "mode": "brevo",
+    "brevoApiKey": "",
+    "brevoSenderEmail": "xulu55605@gmail.com",
+    "brevoSenderName": "Elon Musk & 雷军 每日动态内参",
     "host": "smtp.gmail.com",
     "port": 465,
     "secure": true,
     "user": "xulu55605@gmail.com",
-    "pass": "ggwamjlzctrfdixw",
+    "pass": "",
     "from": "Elon Musk & 雷军 每日动态内参 <xulu55605@gmail.com>"
   },
   "lastRunAt": "2026-09-11T05:31:13.860Z",
-  "nextRunAt": "2026-09-12T08:00:00.000Z",
+  "nextRunAt": "2026-09-15T15:30:00.000Z",
   "lastStatus": "sent"
 }
